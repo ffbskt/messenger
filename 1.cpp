@@ -1,0 +1,72 @@
+#include <boost/asio.hpp>
+#include <iostream>
+#include <boost/bind.hpp>
+#include <string>
+
+
+using namespace std;
+using namespace boost::asio;
+
+typedef boost::shared_ptr<ip::tcp::socket> socket_ptr;
+typedef boost::shared_ptr<io_service::work> work_ptr;
+
+io_service service;
+
+inline bool exists_test3 (const std::string& name) {
+  struct stat buffer;   
+  return (stat (name.c_str(), &buffer) == 0); 
+}
+
+
+string parse_file_name(char* data) {
+  
+  string doc;
+  size_t j = 0;
+  for (size_t i=9; i < 30; ++i) {
+    if (data[i] == ' ' && data[i+1] == 'H')
+ 	return doc;
+    doc.append(1, data[i]);
+  }
+}
+
+
+void chech_and_cout(char* data) {
+  string doc = parse_file_name(data);
+  if (doc.size() > 0 && exists_test3(doc) ) {
+    cout << "doc= " << doc << endl;
+  }
+  else
+   cerr << "error" << endl;
+}
+
+
+
+
+
+void handle_accept(socket_ptr sock, const boost::system::error_code & err)
+ {
+    if ( err) {
+ 	
+	return;
+    }	
+    char data[1512];
+    sock->read_some(buffer(data,1512));
+    chech_and_cout(data);	
+    
+}
+
+
+
+int main ()
+{
+  int port;
+  cin >> port;
+  
+  ip::tcp::endpoint ep( ip::tcp::v4(), port); // listen on 2001
+  ip::tcp::acceptor acc(service, ep);
+  socket_ptr sock(new ip::tcp::socket(service));
+  acc.async_accept(*sock, boost::bind( handle_accept, sock, _1) );
+  service.run();
+  
+  return 0;
+}
